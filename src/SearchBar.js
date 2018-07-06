@@ -15,7 +15,7 @@ export class SearchBar extends Component {
   }
 
   handleSubmit(event) {
-    alert('A search was performed: ' + this.state.value);
+    this.props.onSearch(this.state.value);
     event.preventDefault();
   }
 
