@@ -1,7 +1,35 @@
 import React, { Component } from 'react';
+import { imgSrcToBlob } from 'blob-util';
+
 import { SearchBar } from './SearchBar';
 import { RabbitHole } from './RabbitHole';
 import './App.css';
+
+// What even is this, lol.
+function getCaption(item) {
+  return new Promise(resolve => {
+    imgSrcToBlob(item.imageUrl, 'image/jpeg', 'Anonymous')
+      .then(blob => {
+        let formData = new FormData();
+        formData.append('image', blob, 'image.jpg');
+        fetch(
+          'http://ec2-52-214-48-175.eu-west-1.compute.amazonaws.com:8787/api/v1/i2c',
+          {
+            method: 'POST',
+            body: formData
+          }
+        )
+          .then(res => res.json())
+          .then(res => {
+            if (res.status === 'ok') {
+              item.caption = res.response;
+            }
+            resolve(item);
+          });
+      })
+      .catch(e => console.error(e));
+  });
+}
 
 class App extends Component {
   constructor() {
@@ -41,26 +69,27 @@ class App extends Component {
       .then(res => res.json())
       .then(vector => this.setState({ vector }))
       .catch(err => console.error(err));*/
-    setTimeout(() => {
-      let results = [
-        {
-          id: '1',
-          imageUrl:
-            'https://images.unsplash.com/photo-1530794006412-5429c041040f?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=d44bc6e858efc4625c6e36f7941732a2&auto=format&fit=crop&w=1950&q=80'
-        },
-        {
-          id: '2',
-          imageUrl:
-            'https://images.unsplash.com/photo-1530790359200-e2cac35c770d?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=a8ecadf2c46381d136651afbbe50208f&auto=format&fit=crop&w=1955&q=80'
-        },
-        {
-          id: '3',
-          imageUrl:
-            'https://images.unsplash.com/photo-1530785101372-ac4eb402d2cd?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=fc6cea47d594f98424f9047846c4b2cf&auto=format&fit=crop&w=1953&q=80'
-        }
-      ];
+    let results = [
+      {
+        id: '1',
+        imageUrl: 'testimages/1.jpeg'
+      },
+      {
+        id: '2',
+        imageUrl: 'testimages/2.jpeg'
+      },
+      {
+        id: '3',
+        imageUrl: 'testimages/3.jpeg'
+      },
+      {
+        id: '4',
+        imageUrl: 'testimages/4.png'
+      }
+    ];
+    Promise.all(results.map(getCaption)).then(() => {
       this.setState({ results });
-    }, 1000);
+    });
   }
 }
 
