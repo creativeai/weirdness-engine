@@ -1,0 +1,33 @@
+$itemWidth: 150px;
+$itemHeight: 75px;
+
+.treasureMap {
+  color: white;
+
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.treasureMap--content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: $itemWidth;
+  bottom: $itemHeight;
+}
+
+.treasureMap--item {
+  position: absolute;
+  width: $itemWidth;
+  height: $itemHeight;
+  overflow: hidden;
+}
+
+.treasureMap--item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
