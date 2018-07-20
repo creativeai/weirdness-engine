@@ -72,11 +72,21 @@ export class SpaceWalkPath extends Component {
           viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
         >
           <defs>
-            <radialGradient id="itemHalo">
-              <stop offset="10%" stop-color="rgba(255, 255, 255, 0.05)" />
-              <stop offset="95%" stop-color="rgba(255, 255, 255, 0)" />
-            </radialGradient>
+            {this.props.items.map((item, index) => (
+              <radialGradient key={index} id={`itemHalo-${index}`}>
+                <stop offset="10%" stopColor={`rgba(${item.color}, 0.1)`} />
+                <stop offset="70%" stopColor={`rgba(${item.color}, 0.1)`} />
+                <stop offset="95%" stopColor={`rgba(${item.color}, 0)`} />
+              </radialGradient>
+            ))}
           </defs>
+          <TransitionGroup className="halo-list" component={null}>
+            {items.map((item, index) => (
+              <CSSTransition key={index} timeout={500} classNames="fade">
+                {item.halo}
+              </CSSTransition>
+            ))}
+          </TransitionGroup>
           <path
             ref={this.toTopLeftInitialRef}
             className="path initial"
@@ -105,13 +115,6 @@ export class SpaceWalkPath extends Component {
               this.props.extended ? 0 : this.state.toBottomRightExtendedLength
             }
           />
-          <TransitionGroup className="halo-list" component={null}>
-            {items.map((item, index) => (
-              <CSSTransition key={index} timeout={500} classNames="fade">
-                {item.halo}
-              </CSSTransition>
-            ))}
-          </TransitionGroup>
         </svg>
         <div className="spaceWalkPathItems">
           <TransitionGroup className="item-list" component={null}>
@@ -182,7 +185,7 @@ export class SpaceWalkPath extends Component {
         <circle
           key={index}
           className="halo"
-          fill="url(#itemHalo)"
+          fill={`url(#itemHalo-${index})`}
           cx={pt.x - pxSize + xOffset}
           cy={pt.y - pxSize + yOffset}
           r={pxSize * ITEM_HALO_SCALE_FACTOR}

@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import _ from 'lodash';
 
 import { SpaceWalkPath } from './SpaceWalkPath';
+import { quantizeKMeans } from './kmeans';
 
 import './SpaceWalk.css';
 
@@ -37,27 +38,44 @@ export class SpaceWalk extends Component {
   }
 
   generateItems() {
-    let n = 50;
-    let generateNext = () => {
-      this.setState({
-        items: [
-          ...this.state.items,
-          {
+    let itemsPromise = Promise.all(
+      _.range(50).map(() => {
+        let imgUrl = _.sample([
+          'testimages/1.jpeg',
+          'testimages/2.jpeg',
+          'testimages/3.jpeg',
+          'testimages/4.png'
+        ]);
+        return this.getDominantColor(imgUrl).then(color => {
+          return {
             position: Math.random(),
             size: 0.3 + Math.random() * 0.7,
             xOffset: _.random(-100, 100),
             yOffset: _.random(-100, 100),
-            url: _.sample([
-              'testimages/1.jpeg',
-              'testimages/2.jpeg',
-              'testimages/3.jpeg',
-              'testimages/4.png'
-            ])
-          }
-        ]
-      });
-      if (n-- > 0) setTimeout(generateNext, Math.random() * 100);
-    };
-    setTimeout(generateNext, 1000);
+            url: imgUrl,
+            color
+          };
+        });
+      })
+    );
+    itemsPromise.then(items => {
+      let generateNext = () => {
+        this.setState({
+          items: [...this.state.items, items.shift()]
+        });
+        if (items.length) setTimeout(generateNext, 100);
+      };
+      setTimeout(generateNext, 0);
+    });
+  }
+
+  getDominantColor(imgUrl) {
+    return new Promise(res => {
+      let img = document.createElement('img');
+      img.src = imgUrl;
+      img.onload = () => {
+        res(quantizeKMeans(img));
+      };
+    });
   }
 }
