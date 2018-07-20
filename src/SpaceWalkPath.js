@@ -13,6 +13,7 @@ const BOTTOM_RIGHT_CORNER = [
   window.innerHeight - PATH_MARGIN_VERTICAL
 ];
 const MAX_ITEM_SIZE = 50;
+const ITEM_HALO_SCALE_FACTOR = 7;
 
 export class SpaceWalkPath extends Component {
   constructor() {
@@ -61,12 +62,21 @@ export class SpaceWalkPath extends Component {
   }
 
   render() {
+    let items = this.props.items.map((item, index) =>
+      this.renderItem(item, index)
+    );
     return (
       <div className="spaceWalkPathWrap">
         <svg
           className="spaceWalkPath"
           viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
         >
+          <defs>
+            <radialGradient id="itemHalo">
+              <stop offset="10%" stop-color="rgba(255, 255, 255, 0.05)" />
+              <stop offset="95%" stop-color="rgba(255, 255, 255, 0)" />
+            </radialGradient>
+          </defs>
           <path
             ref={this.toTopLeftInitialRef}
             className="path initial"
@@ -95,12 +105,19 @@ export class SpaceWalkPath extends Component {
               this.props.extended ? 0 : this.state.toBottomRightExtendedLength
             }
           />
+          <TransitionGroup className="halo-list" component={null}>
+            {items.map((item, index) => (
+              <CSSTransition key={index} timeout={500} classNames="fade">
+                {item.halo}
+              </CSSTransition>
+            ))}
+          </TransitionGroup>
         </svg>
         <div className="spaceWalkPathItems">
           <TransitionGroup className="item-list" component={null}>
-            {this.props.items.map((item, index) => (
+            {items.map((item, index) => (
               <CSSTransition key={index} timeout={500} classNames="fade">
-                {this.renderItem(item, index)}
+                {item.item}
               </CSSTransition>
             ))}
           </TransitionGroup>
@@ -147,19 +164,31 @@ export class SpaceWalkPath extends Component {
         this.state.toBottomRightInitialLength;
       pt = this.toBottomRightExtendedRef.current.getPointAtLength(dist);
     }
-    return (
-      <img
-        key={index}
-        className="item"
-        src={url}
-        style={{
-          left: pt.x - pxSize + xOffset,
-          top: pt.y - pxSize + yOffset,
-          width: pxSize,
-          height: pxSize
-        }}
-      />
-    );
+    return {
+      item: (
+        <img
+          key={index}
+          className="item"
+          src={url}
+          style={{
+            left: pt.x - pxSize + xOffset,
+            top: pt.y - pxSize + yOffset,
+            width: pxSize,
+            height: pxSize
+          }}
+        />
+      ),
+      halo: (
+        <circle
+          key={index}
+          className="halo"
+          fill="url(#itemHalo)"
+          cx={pt.x - pxSize + xOffset}
+          cy={pt.y - pxSize + yOffset}
+          r={pxSize * ITEM_HALO_SCALE_FACTOR}
+        />
+      )
+    };
   }
 
   componentDidMount() {
