@@ -12,7 +12,7 @@ const BOTTOM_RIGHT_CORNER = [
   window.innerWidth - PATH_MARGIN_HORIZONTAL,
   window.innerHeight - PATH_MARGIN_VERTICAL
 ];
-const MAX_ITEM_SIZE = 60;
+const MAX_ITEM_SIZE = 50;
 
 export class SpaceWalkPath extends Component {
   constructor() {
@@ -62,50 +62,54 @@ export class SpaceWalkPath extends Component {
 
   render() {
     return (
-      <svg
-        className="spaceWalkPath"
-        viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
-      >
-        <path
-          ref={this.toTopLeftInitialRef}
-          className="path initial"
-          d={generateCurve(this.state.toTopLeftInitialPoints)}
-        />
-        <path
-          ref={this.toTopLeftExtendedRef}
-          className={`path extended ${this.props.extended ? 'visible' : ''}`}
-          d={generateCurve(this.state.toTopLeftExtendedPoints)}
-          strokeDasharray={this.state.toTopLeftExtendedLength}
-          strokeDashoffset={
-            this.props.extended ? 0 : this.state.toTopLeftExtendedLength
-          }
-        />
-        <path
-          ref={this.toBottomRightInitialRef}
-          className="path initial"
-          d={generateCurve(this.state.toBottomRightInitialPoints)}
-        />
-        <path
-          ref={this.toBottomRightExtendedRef}
-          className={`path extended ${this.props.extended ? 'visible' : ''}`}
-          d={generateCurve(this.state.toBottomRightExtendedPoints)}
-          strokeDasharray={this.state.toBottomRightExtendedLength}
-          strokeDashoffset={
-            this.props.extended ? 0 : this.state.toBottomRightExtendedLength
-          }
-        />
-        <TransitionGroup className="item-list" component={null}>
-          {this.props.items.map((item, index) => (
-            <CSSTransition key={index} timeout={500} classNames="fade">
-              {this.renderItem(item, index)}
-            </CSSTransition>
-          ))}
-        </TransitionGroup>
-      </svg>
+      <div className="spaceWalkPathWrap">
+        <svg
+          className="spaceWalkPath"
+          viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
+        >
+          <path
+            ref={this.toTopLeftInitialRef}
+            className="path initial"
+            d={generateCurve(this.state.toTopLeftInitialPoints)}
+          />
+          <path
+            ref={this.toTopLeftExtendedRef}
+            className={`path extended ${this.props.extended ? 'visible' : ''}`}
+            d={generateCurve(this.state.toTopLeftExtendedPoints)}
+            strokeDasharray={this.state.toTopLeftExtendedLength}
+            strokeDashoffset={
+              this.props.extended ? 0 : this.state.toTopLeftExtendedLength
+            }
+          />
+          <path
+            ref={this.toBottomRightInitialRef}
+            className="path initial"
+            d={generateCurve(this.state.toBottomRightInitialPoints)}
+          />
+          <path
+            ref={this.toBottomRightExtendedRef}
+            className={`path extended ${this.props.extended ? 'visible' : ''}`}
+            d={generateCurve(this.state.toBottomRightExtendedPoints)}
+            strokeDasharray={this.state.toBottomRightExtendedLength}
+            strokeDashoffset={
+              this.props.extended ? 0 : this.state.toBottomRightExtendedLength
+            }
+          />
+        </svg>
+        <div className="spaceWalkPathItems">
+          <TransitionGroup className="item-list" component={null}>
+            {this.props.items.map((item, index) => (
+              <CSSTransition key={index} timeout={500} classNames="fade">
+                {this.renderItem(item, index)}
+              </CSSTransition>
+            ))}
+          </TransitionGroup>
+        </div>
+      </div>
     );
   }
 
-  renderItem({ position, size, xOffset, yOffset }, index) {
+  renderItem({ url, position, size, xOffset, yOffset }, index) {
     let pxSize = size * MAX_ITEM_SIZE;
     let totalPathLength =
       this.state.toTopLeftExtendedLength +
@@ -144,13 +148,16 @@ export class SpaceWalkPath extends Component {
       pt = this.toBottomRightExtendedRef.current.getPointAtLength(dist);
     }
     return (
-      <rect
+      <img
         key={index}
         className="item"
-        x={pt.x - pxSize + xOffset}
-        y={pt.y - pxSize + yOffset}
-        width={pxSize}
-        height={pxSize}
+        src={url}
+        style={{
+          left: pt.x - pxSize + xOffset,
+          top: pt.y - pxSize + yOffset,
+          width: pxSize,
+          height: pxSize
+        }}
       />
     );
   }

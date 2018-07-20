@@ -46,7 +46,13 @@ export class SpaceWalk extends Component {
             position: Math.random(),
             size: 0.3 + Math.random() * 0.7,
             xOffset: _.random(-100, 100),
-            yOffset: _.random(-100, 100)
+            yOffset: _.random(-100, 100),
+            url: _.sample([
+              'testimages/1.jpeg',
+              'testimages/2.jpeg',
+              'testimages/3.jpeg',
+              'testimages/4.png'
+            ])
           }
         ]
       });

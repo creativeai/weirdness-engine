@@ -1,10 +1,14 @@
-.spaceWalkPath {
+.spaceWalkPathWrap,
+.spaceWalkPath,
+.spaceWalkPathItems  {
   position: absolute;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
+}
 
+.spaceWalkPath {
   .path {
     fill: none;
     stroke: white;
@@ -14,9 +18,12 @@
       transition: stroke-dashoffset 3s ease;
     }
   }
+}
 
+.spaceWalkPathItems {
   .item {
-    fill: rgba(255, 255, 255, 0.8);
+    position: absolute;
+    object-fit: fill;
 
     &.fade-enter {
       opacity: 0.01;
