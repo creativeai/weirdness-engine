@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
+import { CSSTransition, TransitionGroup } from 'react-transition-group';
+
 import { toPath } from 'svg-catmull-rom-spline';
 import _ from 'lodash';
-
 import './SpaceWalkPath.css';
 
 const PATH_MARGIN_VERTICAL = 50;
@@ -11,11 +12,14 @@ const BOTTOM_RIGHT_CORNER = [
   window.innerWidth - PATH_MARGIN_HORIZONTAL,
   window.innerHeight - PATH_MARGIN_VERTICAL
 ];
+const MAX_ITEM_SIZE = 60;
 
 export class SpaceWalkPath extends Component {
   constructor() {
     super();
+    this.toTopLeftInitialRef = React.createRef();
     this.toTopLeftExtendedRef = React.createRef();
+    this.toBottomRightInitialRef = React.createRef();
     this.toBottomRightExtendedRef = React.createRef();
     let toTopLeftInitialPoints = generatePath(
       [window.innerWidth / 2, window.innerHeight / 2],
@@ -47,10 +51,12 @@ export class SpaceWalkPath extends Component {
     this.state = {
       toTopLeftInitialPoints,
       toTopLeftExtendedPoints,
-      toTopLeftLength: 0,
+      toTopLeftInitialLength: 0,
+      toTopLeftExtendedLength: 0,
+      toBottomRightInitialLength: 0,
+      toBottomRightExtendedLength: 0,
       toBottomRightInitialPoints,
-      toBottomRightExtendedPoints,
-      toBottomRightLength: 0
+      toBottomRightExtendedPoints
     };
   }
 
@@ -61,6 +67,7 @@ export class SpaceWalkPath extends Component {
         viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
       >
         <path
+          ref={this.toTopLeftInitialRef}
           className="path initial"
           d={generateCurve(this.state.toTopLeftInitialPoints)}
         />
@@ -68,12 +75,13 @@ export class SpaceWalkPath extends Component {
           ref={this.toTopLeftExtendedRef}
           className={`path extended ${this.props.extended ? 'visible' : ''}`}
           d={generateCurve(this.state.toTopLeftExtendedPoints)}
-          strokeDasharray={this.state.toTopLeftLength}
+          strokeDasharray={this.state.toTopLeftExtendedLength}
           strokeDashoffset={
-            this.props.extended ? 0 : this.state.toTopLeftLength
+            this.props.extended ? 0 : this.state.toTopLeftExtendedLength
           }
         />
         <path
+          ref={this.toBottomRightInitialRef}
           className="path initial"
           d={generateCurve(this.state.toBottomRightInitialPoints)}
         />
@@ -81,19 +89,78 @@ export class SpaceWalkPath extends Component {
           ref={this.toBottomRightExtendedRef}
           className={`path extended ${this.props.extended ? 'visible' : ''}`}
           d={generateCurve(this.state.toBottomRightExtendedPoints)}
-          strokeDasharray={this.state.toBottomRightLength}
+          strokeDasharray={this.state.toBottomRightExtendedLength}
           strokeDashoffset={
-            this.props.extended ? 0 : this.state.toBottomRightLength
+            this.props.extended ? 0 : this.state.toBottomRightExtendedLength
           }
         />
+        <TransitionGroup className="item-list" component={null}>
+          {this.props.items.map((item, index) => (
+            <CSSTransition key={index} timeout={500} classNames="fade">
+              {this.renderItem(item, index)}
+            </CSSTransition>
+          ))}
+        </TransitionGroup>
       </svg>
+    );
+  }
+
+  renderItem({ position, size, xOffset, yOffset }, index) {
+    let pxSize = size * MAX_ITEM_SIZE;
+    let totalPathLength =
+      this.state.toTopLeftExtendedLength +
+      this.state.toTopLeftInitialLength +
+      this.state.toBottomRightInitialLength +
+      this.state.toBottomRightExtendedLength;
+    let positionAlongLength = position * totalPathLength;
+    let pt;
+    if (positionAlongLength < this.state.toTopLeftExtendedLength) {
+      pt = this.toTopLeftExtendedRef.current.getPointAtLength(
+        positionAlongLength
+      );
+    } else if (
+      positionAlongLength <
+      this.state.toTopLeftExtendedLength + this.state.toTopLeftInitialLength
+    ) {
+      let dist = positionAlongLength - this.state.toTopLeftExtendedLength;
+      pt = this.toTopLeftInitialRef.current.getPointAtLength(dist);
+    } else if (
+      positionAlongLength <
+      this.state.toTopLeftExtendedLength +
+        this.state.toTopLeftInitialLength +
+        this.state.toBottomRightInitialLength
+    ) {
+      let dist =
+        positionAlongLength -
+        this.state.toTopLeftExtendedLength -
+        this.state.toTopLeftInitialLength;
+      pt = this.toBottomRightInitialRef.current.getPointAtLength(dist);
+    } else {
+      let dist =
+        positionAlongLength -
+        this.state.toTopLeftExtendedLength -
+        this.state.toTopLeftInitialLength -
+        this.state.toBottomRightInitialLength;
+      pt = this.toBottomRightExtendedRef.current.getPointAtLength(dist);
+    }
+    return (
+      <rect
+        key={index}
+        className="item"
+        x={pt.x - pxSize + xOffset}
+        y={pt.y - pxSize + yOffset}
+        width={pxSize}
+        height={pxSize}
+      />
     );
   }
 
   componentDidMount() {
     this.setState({
-      toTopLeftLength: this.toTopLeftExtendedRef.current.getTotalLength(),
-      toBottomRightLength: this.toBottomRightExtendedRef.current.getTotalLength()
+      toTopLeftInitialLength: this.toTopLeftInitialRef.current.getTotalLength(),
+      toTopLeftExtendedLength: this.toTopLeftExtendedRef.current.getTotalLength(),
+      toBottomRightInitialLength: this.toBottomRightInitialRef.current.getTotalLength(),
+      toBottomRightExtendedLength: this.toBottomRightExtendedRef.current.getTotalLength()
     });
   }
 }
