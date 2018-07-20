@@ -137,13 +137,15 @@ export class SpaceWalkPath extends Component {
     let pt;
     if (positionAlongLength < this.state.toTopLeftExtendedLength) {
       pt = this.toTopLeftExtendedRef.current.getPointAtLength(
-        positionAlongLength
+        this.state.toTopLeftExtendedLength - positionAlongLength
       );
     } else if (
       positionAlongLength <
       this.state.toTopLeftExtendedLength + this.state.toTopLeftInitialLength
     ) {
-      let dist = positionAlongLength - this.state.toTopLeftExtendedLength;
+      let dist =
+        this.state.toTopLeftInitialLength -
+        (positionAlongLength - this.state.toTopLeftExtendedLength);
       pt = this.toTopLeftInitialRef.current.getPointAtLength(dist);
     } else if (
       positionAlongLength <
