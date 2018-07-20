@@ -73,8 +73,8 @@ export class SpaceWalkPath extends Component {
         >
           <defs>
             <radialGradient id="itemHalo">
-              <stop offset="10%" stop-color="rgba(255, 255, 255, 0.05)" />
-              <stop offset="95%" stop-color="rgba(255, 255, 255, 0)" />
+              <stop offset="10%" stop-color="rgba(0, 0, 0, 0)" />
+              <stop offset="95%" stop-color="rgba(0, 0, 0, 0)" />
             </radialGradient>
           </defs>
           <path

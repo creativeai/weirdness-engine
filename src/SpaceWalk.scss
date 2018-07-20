@@ -1,9 +1,13 @@
 .spaceWalk {
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px;
+  height: 500px;
+  background: #fff;
+  box-shadow: 0 0 50px 0 rgba(0,0,0,0.10);
+  transition: all 1s cubic-bezier(.10, .10, .25, .90);
 
   &:before,
   &:after {
@@ -12,34 +16,34 @@
     width: 30px;
     height: 30px;
     position: absolute;
-    border: 2px solid #525b74;
+    border: 2px solid #201F1B;
     opacity: 0;
-    transition: opacity 1s cubic-bezier(.10, .10, .25, .90);
+    transition: all 1s cubic-bezier(.10, .10, .25, .90);
   }
 
   &:before {
-    bottom: 40px;
-    left: 40px;
+    bottom: 20px;
+    left: 20px;
     border-top: none;
     border-right: none;
   }
 
   &:after {
-    top: 40px;
-    right: 40px;
+    top: 20px;
+    right: 20px;
     border-bottom: none;
     border-left: none;
   }
 
   .search {
     position: absolute;
-    width: 250px;
+    width: 300px;
     height: 40px;
     padding: 5px 10px;
-    font-size: 18px;
-    color: #222;
-    background: none;
+    font-size: 16px;
+    color: #D0021B;
     border: none;
+    background-color: rgba(223,224,229,0.95);
     transition: all 1s cubic-bezier(.10, .10, .25, .90);
 
     &:focus {
@@ -47,54 +51,56 @@
     }
 
     &.left {
-      top: calc(50% - 20px);
-      left: calc(50% - 350px);
-      background-color: rgba(#fff, 0.25);
-      background-image: linear-gradient(#525b74, #525b74), linear-gradient(#525b74, #525b74);
-      background-size: 2px 100%, 100% 2px;
-      background-position: left top, left top;
-      background-repeat: no-repeat;
+      top: 50%;
+      transform: translateY(-50%); 
+      left: 80px;
     }
+
     &.right {
       text-align: right;
-      bottom: calc(50% - 20px);
-      right: calc(50% - 350px);
-      background-color: rgba(#fff, 0.25);
-      background-image: linear-gradient(#525b74, #525b74), linear-gradient(#525b74, #525b74);
-      background-size: 2px 100%, 100% 2px;
-      background-position: right bottom, right bottom;
-      background-repeat: no-repeat;
+      bottom: 50%;
+      transform: translateY(50%); 
+      right: 80px;
     }
   }
 
   .button {
     position: absolute;
-    width: 80px;
-    height: 15px;
-    top: calc(50% - 7.5px);
-    left: calc(50% - 40px);
+    width: 200px;
+    height: 40px;
+    border: none;
+    font-size: 16px;
+    color :#fff;
+    background: #D0021B;
+    padding: 8px 16px;
+    top: calc(50% + 100px);
+    left: 50%;
+    transform: translate(-50%, -50%);
     transition: opacity 0.5s;
+    cursor: pointer;
   }
 
   &.is-extended {
+    width: 100%;
+    height: 100%;
 
     &:before,
     &:after {
       opacity: 1;
-    }
+    } 
 
     .search {
-      background-color: rgba(#fff, 0);
       background-size: 2px 30px, 30px 2px;
-      
+      transform: none;
+
       &.left {
-        top: 40px;
-        left: 40px;
+        top: 20px;
+        left: 20px;
       }
 
       &.right {
-        bottom: 40px;
-        right: 40px;
+        bottom: 20px;
+        right: 20px;
       }
     }
 

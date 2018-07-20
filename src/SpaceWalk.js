@@ -22,8 +22,8 @@ export class SpaceWalk extends Component {
           items={this.state.items}
         />
         <form onSubmit={e => this.onExtend(e)}>
-          <input type="search" className="search left" />
-          <input type="search" className="search right" />
+          <input type="search" className="search left" placeholder="Enter a word..." />
+          <input type="search" className="search right" placeholder="...enter another" />
           <input type="submit" value="Take a walk" className="button" />
         </form>
       </div>

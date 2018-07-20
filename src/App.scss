@@ -82,9 +82,13 @@ ul, ol {
 }
 
 .App {
-  background: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
+  // background: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
   // background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   // background: linear-gradient(45deg, #93a5cf 0%, #e4efe9 100%);
+  // background: linear-gradient(to top, #c4c5c7 0%, #dcdddf 52%, #ebebeb 100%);
+  // background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+  // background: linear-gradient(to top, #e6e9f0 0%, #eef1f5 100%);
+  background: #d3d3d3;
   height: 100vh;
   display: flex;
   flex-flow: column nowrap;
