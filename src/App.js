@@ -4,6 +4,7 @@ import { imgSrcToBlob } from 'blob-util';
 import { SearchBar } from './SearchBar';
 import { RabbitHole } from './RabbitHole';
 import { TreasureMap } from './TreasureMap';
+import { SpaceWalk } from './SpaceWalk';
 import './App.css';
 
 // What even is this, lol.
@@ -97,7 +98,7 @@ class App extends Component {
     return (
       <div className="App">
         <main className="App-main">
-          <TreasureMap items={this.state.treasureMapItems} />
+          <SpaceWalk />
         </main>
         <footer className="App-footer">
           <p>
@@ -110,7 +111,7 @@ class App extends Component {
   }
 
   componentWillMount() {
-    getSimilarImages(this.state.treasureMapItems[0])
+    /*getSimilarImages(this.state.treasureMapItems[0])
       .then(similarImages => {
         this.setState({
           treasureMapItems: this.state.treasureMapItems.concat(
@@ -136,7 +137,7 @@ class App extends Component {
             )
           });
         });
-      });
+      });*/
   }
 
   runSearch(searchTerm) {
@@ -167,9 +168,9 @@ class App extends Component {
         imageUrl: 'testimages/4.png'
       }
     ];
-    Promise.all(results.map(getCaption)).then(() => {
+    /*Promise.all(results.map(getCaption)).then(() => {
       this.setState({ results });
-    });
+    });*/
   }
 }
 

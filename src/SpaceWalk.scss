@@ -1,0 +1,45 @@
+.spaceWalk {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+
+  .search {
+    position: absolute;
+    width: 150px;
+    transition: all 0.5s ease;
+
+    &.left {
+      top: calc(50% - 7.5px);
+      left: calc(50% - 250px);
+    }
+    &.right {
+      bottom: calc(50% - 7.5px);
+      right: calc(50% - 250px);
+    }
+  }
+
+  .button {
+    position: absolute;
+    width: 80px;
+    height: 15px;
+    top: calc(50% - 7.5px);
+    left: calc(50% - 40px);
+    transition: opacity 0.5s;
+  }
+
+  &.is-extended {
+    .search.left {
+      top: 40px;
+      left: 40px;
+    }
+    .search.right {
+      bottom: 40px;
+      right: 40px;
+    }
+    .button {
+      opacity: 0;
+    }
+  }
+}
