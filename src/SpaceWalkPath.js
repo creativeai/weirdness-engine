@@ -68,7 +68,7 @@ export class SpaceWalkPath extends Component {
     let items = this.props.items.map(item => this.getItemBox(item));
     return (
       <div className="spaceWalkPathWrap">
-        <SpaceWalkTerrain itemBoxes={items} />
+        {/*<SpaceWalkTerrain itemBoxes={items} />*/}
         <svg
           className="spaceWalkPath"
           viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
