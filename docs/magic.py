@@ -3,6 +3,7 @@
 """
 Story generation
 """
+import pickle
 import cPickle as pkl
 import numpy
 import copy
@@ -183,22 +184,88 @@ def get_captions(z, image_loc, k=100, bw=50, lyric=False, stochastic=False):
     #return '|'.join(sentences[:5])
     return sentences[:5]
     
+def text2vec(z,text):
+    vec = embedding.encode_sentences(z['vse'], [text], verbose=False)
+    # Compute skip-thought vectors for sentences
+    #svecs = skipthoughts.encode(z['stv'], sentences, verbose=False)
+    return vec
 
-def load_all():
+def image2vec(z,image_loc):
+     # Load the image
+    rawim, im = load_image(image_loc)
+
+    # Run image through convnet
+    feats = compute_features(z['net'], im).flatten()
+    feats /= norm(feats)
+
+    # Embed image into joint space
+    feats = embedding.encode_images(z['vse'], feats[None,:])
+
+    return feats
+
+images, vse_features = pickle.load( open( "vse_feats.p", "rb" ) )
+#print('finished loading vse features for %d images' % len(images))
+
+from scipy.spatial import distance     
+#import uuid
+
+def get_closest_images(query_image_feat, p_features, num_results=5):
+    distances = [ distance.euclidean(query_image_feat, feat) for feat in p_features ]
+    idx_closest = sorted(range(len(distances)), key=lambda k: distances[k])[1:num_results+1]
+    return idx_closest
+
+def get_image_path_between(query_image_idx_1, query_image_idx_2, feats_use, num_hops=4):
+    path = [query_image_idx_1, query_image_idx_2]
+    dist = [0]
+    #print(num_hops)
+    for hop in range(num_hops-1):
+        t = float(hop+1) / num_hops
+        lerp_acts = t * feats_use[query_image_idx_1] + (1.0-t) * feats_use[query_image_idx_2]
+        #print lerp_acts
+        distances = [distance.euclidean(lerp_acts, feat) for feat in feats_use]
+        idx_closest = sorted(range(len(distances)), key=lambda k: distances[k])
+        ix = [i for i in idx_closest if i not in path][0]
+        dist.append(distances[ix])
+        path.insert(1, [i for i in idx_closest if i not in path][0])
+    dist.append(1)
+    return path,dist
+
+import uuid
+from PIL import Image
+def path(z,v1,v2,num_hops=10):
+    idx_closest1 = get_closest_images(v1,vse_features, num_results=1)
+    idx_closest2 = get_closest_images(v2,vse_features, num_results=1)
+    path, dist = get_image_path_between(idx_closest1[0], idx_closest1[0], vse_features, num_hops)
+    
+    filenames = []
+    #filenames.append(filename1)
+    for i,idx in enumerate(path):
+        img = Image.open(images[idx])
+        hexx = uuid.uuid4().hex
+        ext = images[idx].split('.')[-1]
+        filename = 'static/serve/'+hexx+'.'+ext
+        img.save(filename)
+        filenames.append(filename)
+    #filenames.append(filename2)
+    return filenames,dist
+
+def load_all(fast=False):
     """
     Load everything we need for generating
     """
     print config.paths['decmodel']
 
-    # Skip-thoughts
-    print 'Loading skip-thoughts...'
-    stv = skipthoughts.load_model(config.paths['skmodels'],
-                                  config.paths['sktables'])
+    if not fast:
+        # Skip-thoughts
+        print 'Loading skip-thoughts...'
+        stv = skipthoughts.load_model(config.paths['skmodels'],
+                                    config.paths['sktables'])
 
+    if not fast:
     # Decoder
-    print 'Loading decoder...'
-    dec = decoder.load_model(config.paths['decmodel'],
-                             config.paths['dictionary'])
+        print 'Loading decoder...'
+        dec = decoder.load_model(config.paths['decmodel'],
+                                config.paths['dictionary'])
 
     # Image-sentence embedding
     print 'Loading image-sentence embedding...'
@@ -217,16 +284,17 @@ def load_all():
     else:
         net = build_convnet(config.paths['vgg'])
 
-    # Captions
-    print 'Loading captions...'
-    cap = []
-    with open(config.paths['captions'], 'rb') as f:
-        for line in f:
-            cap.append(line.strip())
+    if not fast:
+        # Captions
+        print 'Loading captions...'
+        cap = []
+        with open(config.paths['captions'], 'rb') as f:
+            for line in f:
+                cap.append(line.strip())
 
-    # Caption embeddings
-    print 'Embedding captions...'
-    cvec = embedding.encode_sentences(vse, cap, verbose=False)
+        # Caption embeddings
+        print 'Embedding captions...'
+        cvec = embedding.encode_sentences(vse, cap, verbose=False)
 
     # Biases
     print 'Loading biases...'
@@ -235,12 +303,14 @@ def load_all():
 
     # Pack up
     z = {}
-    z['stv'] = stv
-    z['dec'] = dec
+    if not fast:
+        z['stv'] = stv
+        z['dec'] = dec
     z['vse'] = vse
     z['net'] = net
-    z['cap'] = cap
-    z['cvec'] = cvec
+    if not fast:
+        z['cap'] = cap
+        z['cvec'] = cvec
     z['bneg'] = bneg
     z['bpos'] = bpos
 
@@ -332,8 +402,8 @@ def build_convnet(path_to_vgg):
 
     return net
 
+z = load_all(fast=True)
 
-z = load_all()
 while True:
 
     #STORY
@@ -399,6 +469,70 @@ while True:
             os.remove("input_regularity_neg.txt")
         except OSError:
             pass
+    
+    elif os.path.isfile('input_text2vec.txt'): #got input to work with
+        #generate_caption
+        file = open("input_text2vec.txt", "r") 
+        text = file.read() 
+        out = text2vec(z, text)
+        out = out.tolist()
+        f = open("output_text2vec.txt","w+")
+        f.write(json.dumps(out))
+        f.close() 
+
+        try:
+            os.remove("input_text2vec.txt")
+        except OSError:
+            pass
+    
+    elif os.path.isfile('input_image2vec.txt'): #got input to work with
+        #generate_caption
+        file = open("input_image2vec.txt", "r") 
+        imgname = file.read() 
+        out = image2vec(z, imgname)
+        out = out.tolist()
+        f = open("output_image2vec.txt","w+")
+        f.write(json.dumps(out))
+        f.close() 
+
+        try:
+            os.remove("input_image2vec.txt")
+        except OSError:
+            pass
+
+    elif os.path.isfile('input_path1.pkl'): #got input to work with
+        #generate_caption
+        with open ('input_path1.pkl', 'rb') as fp:
+            v1 = pickle.load(fp)
+        with open ('input_path2.pkl', 'rb') as fp:
+            v2 = pickle.load(fp)
+
+        out = path(z, v1, v2)
+        ims, dist = path(z,v1,v2, num_hops=5)
+        #out = out.tolist()
+        
+        strr = ""
+        for i,p in enumerate(ims):
+            strr += str(i)
+            strr += "|"
+            strr += str(p)
+            strr += "|"
+            strr += str(dist[i])
+            strr += "||"
+
+        with open('output_path.pkl', 'wb') as fp:
+            pickle.dump(strr, fp)
+
+        try:
+            os.remove("input_path1.pkl")
+        except OSError:
+            pass
+        try:
+            os.remove("input_path2.pkl")
+        except OSError:
+            pass
+
     else:
         time.sleep(5)
+        
 

@@ -6,7 +6,8 @@ image2story(image)
 image2romance(image)
 image2reg(image, and form: pos, neg word)
 '''
-
+import cPickle as pkl
+import pickle
 from flask import Flask
 from flask_cors import CORS
 #import request
@@ -331,3 +332,193 @@ def img2regularity():
     return '{"status": "ok", "response": '+json.dumps(val)+'}'
 
 
+
+### NEW ROUTES ###
+'''
+img2vec(im) > {"vector":[...]}
+text2vector(txt) > {"vector":[...]}
+path(v1,v2,hops=3) > [
+    0: {"image": "http://url/someimg.jpg", "distance": 0.2, "vector": [...] },
+    1: {"image": "http://url/someimg.jpg", "distance": 0.5, "vector": [...] },
+    2: {"image": "http://url/someimg.jpg", "distance": 0.8, "vector": [...] },
+]
+vec2caption(v,max_neghbours=10) > [
+    0: {"caption": "two lions in a field", "distance": 0.1, "vector": [...] },
+    1: {"caption": "a lion is running", "distance": 0.1, "vector": [...] },
+    2: {"caption": "some wild animals running", "distance": 0.1, "vector": [...] },
+]
+vec2images(v,max_neghbours=10) > [
+    0: {"image": "http://url/someimg.jpg", "distance": 0.1, "vector": [...] },
+    1: {"image": "http://url/someimg.jpg", "distance": 0.1, "vector": [...] },
+    2: {"image": "http://url/someimg.jpg", "distance": 0.1, "vector": [...] },
+]
+vec2story(v) > {"story":"james was standing in the snow..."}
+vec2romance(v) > {"story":"he lovingly kissed her..."}
+'''
+
+#wrapper for communciatign withb magic.py
+def getMagic(request,name,text=False):
+    try:
+        hsh = pickle.load(open('hash_'+name+'.pkl', "rb"))
+    except:
+        hsh = {}
+    
+    if text:
+        text = request.form['text']
+        imageHash = text
+        filename = text
+    else:
+        hexx = uuid.uuid4().hex
+        file = request.files['image']
+        filename = 'saved/'+hexx+'_'+file.filename #file.filename
+        print(filename)
+        file.save(filename)
+
+        imagecv = cv2.imread(filename)
+        if imagecv is None:
+            return '{"status": "error"}'
+        
+        imagecv = cv2.cvtColor(imagecv, cv2.COLOR_BGR2GRAY)
+        imageHash = dhash(imagecv)
+    
+    if imageHash in hsh:
+        val = hsh[imageHash]
+    else:    
+        #write to file so theano knows it needs to work
+        if os.path.isfile('flask.busy'):
+            #theano or flask already busy, which it shouldnt so error
+            return 'error' #'{"status": "error"}'
+        else:
+            try:
+                os.remove("output_"+name+".txt")
+            except OSError:
+                pass
+                
+            #theano not busy, lets work
+            f = open("input_"+name+".txt","w+")
+            f.write(filename)
+            f.close() 
+
+            #create lock file for flask
+            f = open("flask.busy","w+")
+            f.write("1")
+            f.close() 
+            waiting = True
+
+            while waiting:
+                time.sleep(5)
+                #check if flask shouldnt wait anymore = result written to theano>output
+                if not os.path.isfile('input_'+name+'.txt'):
+                    waiting = False
+            
+            #return stuff in output.txt
+            file = open("output_"+name+".txt", "r") 
+            val = file.read() 
+            print val
+            
+            hsh[imageHash] = val
+            pickle.dump(hsh, open("hash_"+name+".pkl", "wb"))
+            
+            try:
+                os.remove("flask.busy")
+                os.remove("output_"+name+".txt")
+            except OSError:
+                pass
+
+    return val #'{"status": "ok", "response": '+json.dumps(val)+'}'
+
+
+@app.route('/api/v1/image2vec', methods=['POST'])
+def img2vec():
+    val = getMagic(request,'image2vec')
+    if val == 'error':
+        return '{"status": "error"}'
+    else:
+        return '{"status": "ok", "response": '+json.dumps(val)+'}'
+
+@app.route('/api/v1/text2vec', methods=['POST'])
+def text2vec():
+    val = getMagic(request,'text2vec',text=True)
+    if val == 'error':
+        return '{"status": "error"}'
+    else:
+        return '{"status": "ok", "response": '+json.dumps(val)+'}'
+
+
+@app.route('/api/v1/path', methods=['POST'])
+def path():
+    content = request.get_json(silent=True)
+    v1 = content['v1']
+    v2 = content['v2']
+    
+    if v1 is None:
+        return '{"status": "error"}'
+    if v2 is None:
+        return '{"status": "error"}'
+        
+    #no caching for now
+    if True:
+        #write to file so theano knows it needs to work
+        if os.path.isfile('flask.busy'):
+            #theano or flask already busy, which it shouldnt so error
+            return '{"status": "error"}'
+        else:
+            try:
+                os.remove("output_path.pkl")
+            except OSError:
+                pass
+                
+            #theano not busy, lets work
+            with open('input_path1.pkl', 'wb') as fp:
+                pickle.dump(v1, fp)
+            with open('input_path2.pkl', 'wb') as fp:
+                pickle.dump(v2, fp)
+
+            #create lock file for flask
+            f = open("flask.busy","w+")
+            f.write("1")
+            f.close() 
+            waiting = True
+
+            while waiting:
+                time.sleep(5)
+                #check if flask shouldnt wait anymore = result written to theano>output
+                if not os.path.isfile('input_path1.pkl'):
+                    waiting = False
+            
+            #return stuff in output.txt
+            with open ('output_path.pkl', 'rb') as fp:
+                val = pickle.load(fp)
+            print val
+            
+            try:
+                os.remove("flask.busy")
+                os.remove("output_path.pkl")
+            except OSError:
+                pass
+
+    return '{"status": "ok", "response": '+json.dumps(val)+'}'
+
+from flask import send_from_directory
+
+@app.route('/img/<filename>')
+def uploaded_file2(filename):
+    return send_from_directory('static/serve',
+                               filename)
+
+import os
+try:
+    os.mkdir('static')
+except:
+    pass
+try:
+    os.mkdir('static/upload')
+except:
+    pass
+try:
+    os.mkdir('static/serve')
+except:
+    pass
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0',port='8787')
