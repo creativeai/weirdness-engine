@@ -100,12 +100,6 @@ class App extends Component {
         <main className="App-main">
           <SpaceWalk />
         </main>
-        <footer className="App-footer">
-          <p>
-            &copy;{new Date().getFullYear()} Weirdness Engine &bull;{' '}
-            <a>Privacy</a>
-          </p>
-        </footer>
       </div>
     );
   }
