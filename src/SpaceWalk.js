@@ -9,6 +9,8 @@ export class SpaceWalk extends Component {
   constructor() {
     super();
     this.state = {
+      fromTerm: '',
+      toTerm: '',
       extended: false,
       items: []
     };
@@ -22,9 +24,26 @@ export class SpaceWalk extends Component {
           items={this.state.items}
         />
         <form onSubmit={e => this.onExtend(e)}>
-          <input type="search" className="search left" />
-          <input type="search" className="search right" />
-          <input type="submit" value="Take a walk" className="button" />
+          <input
+            type="search"
+            className="search left"
+            value={this.state.fromTerm}
+            onInput={e => this.setState({ fromTerm: e.target.value })}
+          />
+          <input
+            type="search"
+            className="search right"
+            value={this.state.toTerm}
+            onInput={e => this.setState({ toTerm: e.target.value })}
+          />
+          <input
+            type="submit"
+            value="Take a walk"
+            className="button"
+            disabled={
+              _.isEmpty(this.state.fromTerm) || _.isEmpty(this.state.toTerm)
+            }
+          />
         </form>
       </div>
     );
