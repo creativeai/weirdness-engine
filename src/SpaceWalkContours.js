@@ -14,34 +14,38 @@ const SCALEDOWN = 20;
 export class SpaceWalkContours extends Component {
   constructor() {
     super();
-    this.canvasRef = React.createRef();
-    this.state = {};
+    this.state = {
+      contours: []
+    };
   }
 
-  componentDidMount() {
-    this.renderCanvas();
+  componentWillMount() {
+    this.calculateContours(this.props);
   }
 
-  componentDidUpdate() {
-    this.renderCanvas();
+  componentWillReceiveProps(newProps) {
+    this.calculateContours(newProps);
   }
 
   render() {
-    return <canvas className="spaceWalkContours" ref={this.canvasRef} />;
+    return (
+      <g className="spaceWalkContours">
+        {this.state.contours.map(({ band, level }, idx) => (
+          <polygon
+            key={idx}
+            className={`contour contour-level-${level}`}
+            points={band.map(p => p.join(',')).join(' ')}
+          />
+        ))}
+      </g>
+    );
   }
 
-  renderCanvas() {
-    let cnvs = this.canvasRef.current;
-    let width = (cnvs.width = cnvs.offsetWidth);
-    let height = (cnvs.height = cnvs.offsetHeight);
-    let scaleDownWidth = Math.round(width / SCALEDOWN);
-    let scaleDownHeight = Math.round(height / SCALEDOWN);
-
-    let ctx = cnvs.getContext('2d');
-    ctx.clearRect(0, 0, width, height);
+  calculateContours(props) {
+    let scaleDownWidth = Math.round(props.width / SCALEDOWN);
+    let scaleDownHeight = Math.round(props.height / SCALEDOWN);
 
     // Draw gradients for each item (used as contour basis, not actually shown)
-
     let gradientCnvs = document.createElement('canvas');
     let gradientCtx = gradientCnvs.getContext('2d');
     gradientCnvs.width = scaleDownWidth;
@@ -50,7 +54,7 @@ export class SpaceWalkContours extends Component {
     gradientCtx.fillRect(0, 0, scaleDownWidth, scaleDownHeight);
     gradientCtx.globalCompositeOperation = 'lighter';
 
-    for (let box of this.props.itemBoxes) {
+    for (let box of props.itemBoxes) {
       let cntrX = (box.left + box.width / 2) / SCALEDOWN;
       let cntrY = (box.top + box.height / 2) / SCALEDOWN;
       let grad = gradientCtx.createRadialGradient(
@@ -107,12 +111,9 @@ export class SpaceWalkContours extends Component {
     ]);
 
     // Draw contour lines
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.strokeStyle = 'rgb(180, 180, 180)';
-    ctx.lineWidth = 0.5;
-
-    let outermostPolygon;
-    for (let bands of levels) {
+    let contours = [];
+    for (let level = 0; level < levels.length; level++) {
+      let bands = levels[level];
       if (bands.length === 1 && bands[0].length === 5) {
         // It's nothing, just the bounding rect
         continue;
@@ -127,15 +128,12 @@ export class SpaceWalkContours extends Component {
           let smoothed = polygonSmooth(polygon, { iterations: 2 });
           sBand = smoothed.features[0].geometry.coordinates[0];
         }
-
-        ctx.beginPath();
-        ctx.moveTo(sBand[0][0] * SCALEDOWN, sBand[0][1] * SCALEDOWN);
-        for (let i = 1; i < sBand.length; i++) {
-          ctx.lineTo(sBand[i][0] * SCALEDOWN, sBand[i][1] * SCALEDOWN);
-        }
-
-        ctx.stroke();
+        contours.push({
+          level,
+          band: sBand.map(([x, y]) => [x * SCALEDOWN, y * SCALEDOWN])
+        });
       }
     }
+    this.setState({ contours });
   }
 }

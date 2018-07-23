@@ -70,11 +70,15 @@ export class SpaceWalkPath extends Component {
     return (
       <div className="spaceWalkPathWrap">
         {/*<SpaceWalkTerrain itemBoxes={items} />*/}
-        <SpaceWalkContours itemBoxes={items} />
         <svg
           className="spaceWalkPath"
           viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
         >
+          <SpaceWalkContours
+            itemBoxes={items}
+            width={window.innerWidth}
+            height={window.innerHeight}
+          />
           <path
             ref={this.toTopLeftInitialRef}
             className="path initial"

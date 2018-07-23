@@ -1,7 +1,44 @@
-.spaceWalkContours {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
+.contour {
+  stroke: rgb(180, 180, 180);
+  stroke-width: 0.5;
+  fill: none;
+
+  /*
+  &.contour-level-0 {
+    fill: darken(white, 2%);
+  }
+  &.contour-level-1 {
+    fill: darken(white, 4%);
+  }
+  &.contour-level-2 {
+    fill: darken(white, 6%);
+  }
+  &.contour-level-3 {
+    fill: darken(white, 8%);
+  }
+  &.contour-level-4 {
+    fill: darken(white, 10%);
+  }
+  &.contour-level-5 {
+    fill: darken(white, 12%);
+  }
+  &.contour-level-6 {
+    fill: darken(white, 14%);
+  }
+  &.contour-level-7 {
+    fill: darken(white, 16%);
+  }
+  &.contour-level-8 {
+    fill: darken(white, 18%);
+  }
+  &.contour-level-9 {
+    fill: darken(white, 20%);
+  }
+  &.contour-level-10 {
+    fill: darken(white, 22%);
+  }
+  &.contour-level-11 {
+    fill: darken(white, 24%);
+  }
+  */
 }
