@@ -203,16 +203,20 @@ def image2vec(z,image_loc):
 
     return feats
 
-images, vse_features = pickle.load( open( "vse_feats2.p", "rb" ) )
+#images, vse_features = pickle.load( open( "vse_feats2.p", "rb" ) )
+images, vse_features = pickle.load( open( "/home/ubuntu/EBS4/vse_feats_oid.p", "rb" ) )
 #concat_pca_tsne_embedded2.p   #TSNE
 #concat_pca_features2          #PCA
 #concat_feats2.p               #concatted
 #vse_feats2.p
 #conv_feats2.p    
-images, conv_features = pickle.load( open( "concat_pca_tsne_embedded2.p", "rb" ) )
+#images, conv_features = pickle.load( open( "concat_pca_tsne_embedded2.p", "rb" ) )
+images, conv_features = pickle.load( open( "/home/ubuntu/EBS4/conv_feats_oid.p", "rb" ) )
 #print('finished loading vse features for %d images' % len(images))
 
-images, graph = pickle.load( open( "graph_2.p", "rb" ) )
+#images, graph = pickle.load( open( "graph_2.p", "rb" ) )
+images, graph = pickle.load( open( "/home/ubuntu/EBS4/graph_oid.p", "rb" ) )
+
 
 from scipy.spatial import distance
 import igraph as igraph
@@ -220,8 +224,11 @@ import igraph as igraph
 
 # ANNOY INDEX
 from annoy import AnnoyIndex
+#ann_index = AnnoyIndex(1024)
+#ann_index.load('concat_feats_annoy')
 ann_index = AnnoyIndex(1024)
-ann_index.load('concat_feats_annoy')
+ann_index.load('/home/ubuntu/EBS4/vse_feats_oid_annoy')
+
 
 def get_closest_images(query_image_feat, p_features, num_results=5):
 
@@ -283,7 +290,9 @@ def get_image_path_between(query_image_idx_1, query_image_idx_2, feats_use, num_
     #test2 = 0
     #testadded = 0
     if True:
-        path = graph.get_shortest_paths(query_image_idx_1, to=query_image_idx_2, mode=igraph.OUT, output='vpath', weights='weight')[0]
+        #path = graph.get_shortest_paths(query_image_idx_1, to=query_image_idx_2, mode=igraph.OUT, output='vpath', weights='weight')[0]
+        path = graph.get_shortest_paths(query_image_idx_1, to=query_image_idx_2, 
+            mode=igraph.ALL, output='vpath', weights='weight')[0]
         #path2 = path
         cur_weight = 0
         dist = []
@@ -316,7 +325,7 @@ def get_image_path_between(query_image_idx_1, query_image_idx_2, feats_use, num_
                 #to_get = rem
                 #grab 5 in case one already exists
                 #print "extra as neigbour of",i
-                idx_closest,distances = ann_index.get_nns_by_vector(vse_features[path[i]], 5, include_distances=True)
+                idx_closest,distances = ann_index.get_nns_by_vector(vse_features[path[i]], 50, include_distances=True)
                 for i2,idx in enumerate(idx_closest): #add if it makes it where we should be, num_hops wise
                     if added+1 <= be_at:
                         if not idx in path:

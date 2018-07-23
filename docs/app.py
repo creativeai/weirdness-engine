@@ -515,8 +515,12 @@ from flask import send_from_directory
 #@app.route('/img/<filename>')
 @app.route('/<path:filename>')  
 def uploaded_file2(filename):
-    return send_from_directory('/home/ubuntu/EBS5/BAM',
+    #return send_from_directory('/home/ubuntu/EBS5/BAM',
+    #                           filename)
+    return send_from_directory('/home/ubuntu/EBS5/OPENIMAGES/TRAIN',
                                filename)
+    
+
 
 import os
 try:
