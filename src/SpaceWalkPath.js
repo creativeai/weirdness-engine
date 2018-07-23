@@ -5,6 +5,7 @@ import { toPath } from 'svg-catmull-rom-spline';
 import _ from 'lodash';
 
 import { SpaceWalkTerrain } from './SpaceWalkTerrain';
+import { SpaceWalkContours } from './SpaceWalkContours';
 
 import './SpaceWalkPath.css';
 
@@ -16,7 +17,7 @@ const BOTTOM_RIGHT_CORNER = [
   window.innerHeight - PATH_MARGIN_VERTICAL
 ];
 const MAX_ITEM_SIZE = 50;
-const ITEM_HALO_SCALE_FACTOR = 7;
+const ITEM_HALO_SCALE_FACTOR = 10;
 
 export class SpaceWalkPath extends Component {
   constructor() {
@@ -73,7 +74,11 @@ export class SpaceWalkPath extends Component {
           className="spaceWalkPath"
           viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
         >
-          {' '}
+          <SpaceWalkContours
+            itemBoxes={items}
+            width={window.innerWidth}
+            height={window.innerHeight}
+          />
           <path
             ref={this.toTopLeftInitialRef}
             className="path initial"
