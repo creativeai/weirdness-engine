@@ -203,20 +203,166 @@ def image2vec(z,image_loc):
 
     return feats
 
-images, vse_features = pickle.load( open( "vse_feats.p", "rb" ) )
+images, vse_features = pickle.load( open( "vse_feats2.p", "rb" ) )
+#concat_pca_tsne_embedded2.p   #TSNE
+#concat_pca_features2          #PCA
+#concat_feats2.p               #concatted
+#vse_feats2.p
+#conv_feats2.p    
+images, conv_features = pickle.load( open( "concat_pca_tsne_embedded2.p", "rb" ) )
 #print('finished loading vse features for %d images' % len(images))
 
-from scipy.spatial import distance     
+images, graph = pickle.load( open( "graph_2.p", "rb" ) )
+
+from scipy.spatial import distance
+import igraph as igraph
 #import uuid
 
+# ANNOY INDEX
+from annoy import AnnoyIndex
+ann_index = AnnoyIndex(1024)
+ann_index.load('concat_feats_annoy')
+
 def get_closest_images(query_image_feat, p_features, num_results=5):
-    distances = [ distance.euclidean(query_image_feat, feat) for feat in p_features ]
-    idx_closest = sorted(range(len(distances)), key=lambda k: distances[k])[1:num_results+1]
+
+    idx_closest,distances = ann_index.get_nns_by_vector(query_image_feat, num_results, include_distances=True)
+
+    #distances = [ distance.euclidean(query_image_feat, feat) for feat in p_features ]
+    #idx_closest = sorted(range(len(distances)), key=lambda k: distances[k])[1:num_results+1]
     return idx_closest
 
-def get_image_path_between(query_image_idx_1, query_image_idx_2, feats_use, num_hops=4):
-    path = [query_image_idx_1, query_image_idx_2]
-    dist = [0]
+import time
+
+def get_image_path_between(query_image_idx_1, query_image_idx_2, feats_use, num_hops=100):
+    #path = [query_image_idx_1, query_image_idx_2]
+
+    #GRAPH PATH
+    #TODO: hops now not used, as gets the shortest path
+    #TODO: if more needed = add nearest neiugbours for each point
+    print "get_image_path_between()",query_image_idx_1,query_image_idx_2
+    start_millis = int(round(time.time() * 1000))
+    if query_image_idx_1 == query_image_idx_2:
+        print query_image_idx_1,"and",query_image_idx_2,"the same, taking random other index"
+        #TODO: warning to user
+        return "error","error"
+    #mode 1 = OUT
+    '''
+    path = graph.get_shortest_paths(query_image_idx_1, to=query_image_idx_2, mode=igraph.OUT, output='vpath', weights='weight')[0]
+    cur_weight = 0
+    dist = []
+    path_len = len(path)
+    for i,e in enumerate(path):
+        #print i
+        if i < path_len-1:
+            edgeid = graph.get_eid(path[i],path[i+1])
+            edge = graph.es.select(edgeid)
+            w = edge['weight'][0]
+            #print w
+            cur_weight += w
+            dist.append(cur_weight)
+    
+    import numpy as np
+    from sklearn.preprocessing import minmax_scale
+    dist1 = minmax_scale(dist, feature_range=(0.1, 0.9))
+    dist2 = np.array(dist1).tolist()
+    dist2.insert(0,0)
+    dist2.append(1)'''
+    #new version adding neighbours
+    #can run in loop until we get the nr we want with hops:
+    #run path once, and then calculate how many neigbours wanted
+    #extra_nn_idx=[]
+    #extra_nn_dist=[]
+    EXTRA = 0
+    added = 0
+    be_at = 0
+
+    #REMAIN = 0 
+    #rem=0 #if over 1 we add one
+    path2 = []
+    #test = 0
+    #test2 = 0
+    #testadded = 0
+    if True:
+        path = graph.get_shortest_paths(query_image_idx_1, to=query_image_idx_2, mode=igraph.OUT, output='vpath', weights='weight')[0]
+        #path2 = path
+        cur_weight = 0
+        dist = []
+        #dist.append(0)
+        #path2.append(query_image_idx_1)
+        path_len = len(path)
+        if path_len < num_hops:
+            EXTRA = float(num_hops)/float(path_len)
+            #REMAIN = float(num_hops)/float(path_len)-EXTRA
+            print "path nodes",path_len,"< requested hops of ",num_hops
+            print "adding",EXTRA,"neighbours per path node"
+        for i,e in enumerate(path):
+            be_at += EXTRA
+            #print i
+            path2.append(e)
+            added += 1
+            #testadded += 1
+            #print "testadded",testadded
+            if i < path_len-1:
+                edgeid = graph.get_eid(path[i],path[i+1])
+                edge = graph.es.select(edgeid)
+                w = edge['weight'][0]
+                #print w
+                cur_weight += w
+                dist.append(cur_weight)
+            else:
+                dist.append(cur_weight)
+                
+            if EXTRA > 0:
+                #to_get = rem
+                #grab 5 in case one already exists
+                #print "extra as neigbour of",i
+                idx_closest,distances = ann_index.get_nns_by_vector(vse_features[path[i]], 5, include_distances=True)
+                for i2,idx in enumerate(idx_closest): #add if it makes it where we should be, num_hops wise
+                    if added+1 <= be_at:
+                        if not idx in path:
+                            added += 1
+                            path2.append(idx)
+                            dist.append(cur_weight)
+    #end new method
+    #print dist
+    #print path2
+
+    if len(dist)==0:
+        #backup method
+        print "no distance found backup slow method:..."
+        #mode 1 = OUT
+        
+        path = graph.get_shortest_paths(query_image_idx_1, to=query_image_idx_2, mode=igraph.OUT, output='vpath', weights='weight')[0]
+        cur_weight = 0
+        dist = []
+        path_len = len(path)
+        for i,e in enumerate(path):
+            #print i
+            if i < path_len-1:
+                edgeid = graph.get_eid(path[i],path[i+1])
+                edge = graph.es.select(edgeid)
+                w = edge['weight'][0]
+                #print w
+                cur_weight += w
+                dist.append(cur_weight)
+        
+        import numpy as np
+        from sklearn.preprocessing import minmax_scale
+        dist1 = minmax_scale(dist, feature_range=(0.1, 0.9))
+        dist2 = np.array(dist1).tolist()
+        dist2.insert(0,0)
+        dist2.append(1)
+        
+    else:
+        from sklearn.preprocessing import minmax_scale
+        dist2 = minmax_scale(dist, feature_range=(0, 1))
+        path=path2
+
+    '''
+    #OTHER METHOD
+    dist = []
+    print "get_image_path_between()"
+    start_millis = int(round(time.time() * 1000))
     #print(num_hops)
     for hop in range(num_hops-1):
         t = float(hop+1) / num_hops
@@ -227,26 +373,68 @@ def get_image_path_between(query_image_idx_1, query_image_idx_2, feats_use, num_
         ix = [i for i in idx_closest if i not in path][0]
         dist.append(distances[ix])
         path.insert(1, [i for i in idx_closest if i not in path][0])
-    dist.append(1)
-    return path,dist
+
+        end_millis = int(round(time.time() * 1000))
+        print "hop",hop,": at ",(end_millis-start_millis),"ms"
+    #dist.append(1)
+    with open('dist0.pkl', 'wb') as fp:
+        pickle.dump(dist, fp)
+    
+    from sklearn.preprocessing import minmax_scale
+    dist1 = minmax_scale(dist, feature_range=(0.1, 0.9))
+    with open('dist1.pkl', 'wb') as fp:
+        pickle.dump(dist1, fp)
+    import numpy as np
+    dist2 = np.array(dist1).tolist()
+    dist2.insert(0,0)
+    dist2.append(1)
+    #can be loaded for debugging
+    with open('dist2.pkl', 'wb') as fp:
+        pickle.dump(dist2, fp)
+
+    '''
+    end_millis = int(round(time.time() * 1000))
+    print "returning total path length of",len(path)
+    print "get_image_path_between() took",(end_millis-start_millis),"ms"
+    
+    return path,dist2
 
 import uuid
 from PIL import Image
 def path(z,v1,v2,num_hops=10):
+    print "path()"
+    #v1 = np.asarray(v1)
+    #v2 = np.asarray(v2)
+    start_millis = int(round(time.time() * 1000))
     idx_closest1 = get_closest_images(v1,vse_features, num_results=1)
     idx_closest2 = get_closest_images(v2,vse_features, num_results=1)
-    path, dist = get_image_path_between(idx_closest1[0], idx_closest1[0], vse_features, num_hops)
-    
+    end_millis = int(round(time.time() * 1000))
+    print "2x get_closest_images() took",(end_millis-start_millis),"ms"
+    #try with conv_features here!
+    path, dist = get_image_path_between(idx_closest1[0], idx_closest2[0], conv_features, num_hops)
+    if path == "error":
+        return "error","error"
+    #moving files around
+    start_millis2 = int(round(time.time() * 1000))
+    #/home/ubuntu/EBS5/BAM/content_people/81db4417435165.562b9ee8bea7e.jpg
+    #=
+    #http://ec2-34-243-15-197.eu-west-1.compute.amazonaws.com:8787/content_people/81db4417435165.562b9ee8bea7e.jpg
+    # sp
     filenames = []
     #filenames.append(filename1)
     for i,idx in enumerate(path):
-        img = Image.open(images[idx])
-        hexx = uuid.uuid4().hex
-        ext = images[idx].split('.')[-1]
-        filename = 'static/serve/'+hexx+'.'+ext
-        img.save(filename)
-        filenames.append(filename)
+        #img = Image.open(images[idx])
+        #hexx = uuid.uuid4().hex
+        #ext = images[idx].split('.')[-1]
+        #filename = 'static/serve/'+hexx+'.'+ext
+        #img.save(filename)
+        filenames.append(images[idx].replace('/home/ubuntu/EBS5/BAM/',''))
     #filenames.append(filename2)
+    end_millis2 = int(round(time.time() * 1000))
+    print "movimg images around took",(end_millis2-start_millis2),"ms"
+
+    end_millis = int(round(time.time() * 1000))
+    print "total path() took",(end_millis-start_millis),"ms"
     return filenames,dist
 
 def load_all(fast=False):
@@ -500,28 +688,34 @@ while True:
         except OSError:
             pass
 
-    elif os.path.isfile('input_path1.pkl'): #got input to work with
+    elif os.path.isfile('input_path3.pkl'): #got input to work with
         #generate_caption
+        #wait a bit so other files also written
+        #import time
+        #time.sleep(0.1)
         with open ('input_path1.pkl', 'rb') as fp:
             v1 = pickle.load(fp)
         with open ('input_path2.pkl', 'rb') as fp:
             v2 = pickle.load(fp)
+        with open ('input_path3.pkl', 'rb') as fp:
+            num_hops = pickle.load(fp)
 
-        out = path(z, v1, v2)
-        ims, dist = path(z,v1,v2, num_hops=5)
-        #out = out.tolist()
-        
-        strr = ""
-        for i,p in enumerate(ims):
-            strr += str(i)
-            strr += "|"
-            strr += str(p)
-            strr += "|"
-            strr += str(dist[i])
-            strr += "||"
+        #out = path(z, v1, v2)
+        ims, dist = path(z,v1,v2, num_hops=num_hops)
+        if ims == "error":
+            with open('output_path.pkl', 'wb') as fp:
+                pickle.dump('error', fp)
+        else:
+            all_vals = []
+            #{items:[{path:x,distance:2},{path:x,distance:2}], num_items:2}
+            for i,p in enumerate(ims):
+                vl = {}
+                vl['path'] = str(p)
+                vl['distance'] = dist[i]
+                all_vals.append(vl)
 
-        with open('output_path.pkl', 'wb') as fp:
-            pickle.dump(strr, fp)
+            with open('output_path.pkl', 'wb') as fp:
+                pickle.dump(all_vals, fp)
 
         try:
             os.remove("input_path1.pkl")
@@ -531,8 +725,12 @@ while True:
             os.remove("input_path2.pkl")
         except OSError:
             pass
+        try:
+            os.remove("input_path3.pkl")
+        except OSError:
+            pass
 
     else:
-        time.sleep(5)
+        time.sleep(0.01)
         
 
