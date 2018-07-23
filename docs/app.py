@@ -66,7 +66,7 @@ def img2story():
     hexx = uuid.uuid4().hex
     file = request.files['image']
     filename = 'saved/'+hexx+'_'+file.filename #file.filename
-    print(filename)
+    #print(filename)
     file.save(filename)
 
     # HASH > ALREADY DONE?
@@ -105,7 +105,7 @@ def img2story():
             waiting = True
 
             while waiting:
-                time.sleep(5)
+                time.sleep(0.01)
                 #check if flask shouldnt wait anymore = result written to theano>output
                 if not os.path.isfile('input.txt'):
                     waiting = False
@@ -113,7 +113,7 @@ def img2story():
             #return stuff in output.txt
             file = open("output.txt", "r") 
             val = file.read() 
-            print val
+            #print val
             
             all_hashes[imageHash] = val
             pickle.dump(all_hashes, open("all_hashes.pkl", "wb"))
@@ -170,7 +170,7 @@ def img2coco():
             waiting = True
 
             while waiting:
-                time.sleep(5)
+                time.sleep(0.01)
                 #check if flask shouldnt wait anymore = result written to theano>output
                 if not os.path.isfile('input_caption.txt'):
                     waiting = False
@@ -178,7 +178,7 @@ def img2coco():
             #return stuff in output.txt
             file = open("output_caption.txt", "r") 
             val = file.read() 
-            print val
+            #print val
             
             all_hashes_caption[imageHash] = val
             pickle.dump(all_hashes_caption, open("all_hashes_caption.pkl", "wb"))
@@ -236,7 +236,7 @@ def img2caption():
             waiting = True
 
             while waiting:
-                time.sleep(5)
+                time.sleep(0.01)
                 #check if flask shouldnt wait anymore = result written to theano>output
                 if not os.path.isfile('input_getcaptions.txt'):
                     waiting = False
@@ -244,7 +244,7 @@ def img2caption():
             #return stuff in output.txt
             file = open("output_getcaptions.txt", "r") 
             val = file.read() 
-            print val
+            #print val
             
             all_hashes_getcaptions[imageHash] = val
             pickle.dump(all_hashes_getcaptions, open("all_hashes_getcaptions.pkl", "wb"))
@@ -310,7 +310,7 @@ def img2regularity():
             waiting = True
 
             while waiting:
-                time.sleep(5)
+                time.sleep(0.01)
                 #check if flask shouldnt wait anymore = result written to theano>output
                 if not os.path.isfile('input_regularity.txt'):
                     waiting = False
@@ -318,7 +318,7 @@ def img2regularity():
             #return stuff in output.txt
             file = open("output_regularity_1.txt", "r") 
             val = file.read() 
-            print val
+            #print val
             
             all_hashes_reg[imageHash] = val
             pickle.dump(all_hashes_reg, open("all_hashes_reg.pkl", "wb"))
@@ -371,7 +371,7 @@ def getMagic(request,name,text=False):
         hexx = uuid.uuid4().hex
         file = request.files['image']
         filename = 'saved/'+hexx+'_'+file.filename #file.filename
-        print(filename)
+        #print(filename)
         file.save(filename)
 
         imagecv = cv2.imread(filename)
@@ -406,7 +406,7 @@ def getMagic(request,name,text=False):
             waiting = True
 
             while waiting:
-                time.sleep(5)
+                time.sleep(0.01)
                 #check if flask shouldnt wait anymore = result written to theano>output
                 if not os.path.isfile('input_'+name+'.txt'):
                     waiting = False
@@ -414,7 +414,7 @@ def getMagic(request,name,text=False):
             #return stuff in output.txt
             file = open("output_"+name+".txt", "r") 
             val = file.read() 
-            print val
+            #print val
             
             hsh[imageHash] = val
             pickle.dump(hsh, open("hash_"+name+".pkl", "wb"))
@@ -450,12 +450,18 @@ def path():
     content = request.get_json(silent=True)
     v1 = content['v1']
     v2 = content['v2']
-    
+    if 'num_hops' in content:
+        num_hops = content['num_hops']
+    else:
+        num_hops = 10
+
     if v1 is None:
         return '{"status": "error"}'
     if v2 is None:
         return '{"status": "error"}'
-        
+    if num_hops == None:
+        num_hops = 10
+
     #no caching for now
     if True:
         #write to file so theano knows it needs to work
@@ -473,6 +479,8 @@ def path():
                 pickle.dump(v1, fp)
             with open('input_path2.pkl', 'wb') as fp:
                 pickle.dump(v2, fp)
+            with open('input_path3.pkl', 'wb') as fp:
+                pickle.dump(num_hops, fp)
 
             #create lock file for flask
             f = open("flask.busy","w+")
@@ -481,7 +489,7 @@ def path():
             waiting = True
 
             while waiting:
-                time.sleep(5)
+                time.sleep(0.01)
                 #check if flask shouldnt wait anymore = result written to theano>output
                 if not os.path.isfile('input_path1.pkl'):
                     waiting = False
@@ -489,7 +497,7 @@ def path():
             #return stuff in output.txt
             with open ('output_path.pkl', 'rb') as fp:
                 val = pickle.load(fp)
-            print val
+            #print val
             
             try:
                 os.remove("flask.busy")
@@ -497,13 +505,17 @@ def path():
             except OSError:
                 pass
 
+    if val=='error':
+        return '{"status": "error"}'
+
     return '{"status": "ok", "response": '+json.dumps(val)+'}'
 
 from flask import send_from_directory
 
-@app.route('/img/<filename>')
+#@app.route('/img/<filename>')
+@app.route('/<path:filename>')  
 def uploaded_file2(filename):
-    return send_from_directory('static/serve',
+    return send_from_directory('/home/ubuntu/EBS5/BAM',
                                filename)
 
 import os
