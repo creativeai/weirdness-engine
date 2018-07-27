@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
 
+import { Viewport } from './Viewport';
 import { SpaceWalkPath } from './SpaceWalkPath';
 
 import './SpaceWalk.css';
@@ -48,10 +49,12 @@ export class SpaceWalk extends Component {
   render() {
     return (
       <div className={`spaceWalk ${this.state.extended ? 'is-extended' : ''}`}>
-        <SpaceWalkPath
-          extended={this.state.extended}
-          items={this.state.items}
-        />
+        <Viewport>
+          <SpaceWalkPath
+            extended={this.state.extended}
+            items={this.state.items}
+          />
+        </Viewport>
         <form onSubmit={e => this.onExtend(e)}>
           <input
             type="search"
