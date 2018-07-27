@@ -9,15 +9,14 @@ import { SpaceWalkContours } from './SpaceWalkContours';
 
 import './SpaceWalkPath.css';
 
-const PATH_MARGIN_VERTICAL = 50;
-const PATH_MARGIN_HORIZONTAL = 100;
+const PATH_MARGIN_VERTICAL = 100;
+const PATH_MARGIN_HORIZONTAL = 150;
 const TOP_LEFT_CORNER = [PATH_MARGIN_HORIZONTAL, PATH_MARGIN_VERTICAL];
 const BOTTOM_RIGHT_CORNER = [
   window.innerWidth - PATH_MARGIN_HORIZONTAL,
   window.innerHeight - PATH_MARGIN_VERTICAL
 ];
 const MAX_ITEM_SIZE = 50;
-const ITEM_HALO_SCALE_FACTOR = 10;
 
 export class SpaceWalkPath extends Component {
   constructor() {
@@ -26,30 +25,44 @@ export class SpaceWalkPath extends Component {
     this.toTopLeftExtendedRef = React.createRef();
     this.toBottomRightInitialRef = React.createRef();
     this.toBottomRightExtendedRef = React.createRef();
+    console.log('tli');
     let toTopLeftInitialPoints = generatePath(
-      [window.innerWidth / 2, window.innerHeight / 2],
-      [window.innerWidth / 2 - 100, window.innerHeight / 2],
-      20,
-      10
+      [
+        {
+          startPoint: [window.innerWidth / 2, window.innerHeight / 2],
+          endPoint: [window.innerWidth / 2 - 100, window.innerHeight / 2],
+          maxPoints: 10
+        }
+      ],
+      20
     );
+    console.log('tle');
     let toTopLeftExtendedPoints = generatePath(
-      [window.innerWidth / 2 - 100, window.innerHeight / 2],
-      TOP_LEFT_CORNER,
+      generateLeftPathQuadrants(
+        [window.innerWidth / 2 - 100, window.innerHeight / 2],
+        TOP_LEFT_CORNER
+      ),
       50,
-      25,
       getHeading(..._.takeRight(toTopLeftInitialPoints, 2))
     );
+    console.log('tri');
     let toBottomRightInitialPoints = generatePath(
-      [window.innerWidth / 2, window.innerHeight / 2],
-      [window.innerWidth / 2 + 100, window.innerHeight / 2],
-      20,
-      10
+      [
+        {
+          startPoint: [window.innerWidth / 2, window.innerHeight / 2],
+          endPoint: [window.innerWidth / 2 + 100, window.innerHeight / 2],
+          maxPoints: 10
+        }
+      ],
+      20
     );
+    console.log('bre');
     let toBottomRightExtendedPoints = generatePath(
-      [window.innerWidth / 2 + 100, window.innerHeight / 2],
-      BOTTOM_RIGHT_CORNER,
+      generateRightPathQuadrants(
+        [window.innerWidth / 2 + 100, window.innerHeight / 2],
+        BOTTOM_RIGHT_CORNER
+      ),
       50,
-      25,
       getHeading(..._.takeRight(toBottomRightInitialPoints, 2))
     );
 
@@ -190,26 +203,95 @@ export class SpaceWalkPath extends Component {
   }
 }
 
-function generatePath(
-  startPoint,
-  endPoint,
-  stepLength,
-  maxPoints,
-  startHeading = getHeading(startPoint, endPoint)
-) {
+function generateLeftPathQuadrants(startPoint, endPoint) {
   let tries = 0;
-  while (tries++ < 100) {
-    let attempt = tryGeneratePath(
-      startPoint,
-      endPoint,
-      stepLength,
-      startHeading
-    );
-    if (attempt.length < maxPoints) {
-      return attempt;
+
+  while (true) {
+    try {
+      let result = [];
+      let mid1 = [window.innerWidth / 4, window.innerHeight / 5];
+      let mid2 = [window.innerWidth / 3, (window.innerHeight * 4) / 5];
+      result.push({
+        startPoint: startPoint,
+        endPoint: mid1,
+        maxPoints: 20
+      });
+      result.push({
+        startPoint: mid1,
+        endPoint: mid2,
+        maxPoints: 20
+      });
+      result.push({
+        startPoint: mid2,
+        endPoint: endPoint,
+        maxPoints: 20
+      });
+      return result;
+    } catch (e) {
+      if (tries++ > 20) {
+        throw e;
+      }
     }
   }
-  throw 'Could not find short enough path';
+}
+
+function generateRightPathQuadrants(startPoint, endPoint) {
+  let tries = 0;
+
+  while (true) {
+    try {
+      let result = [];
+      let mid1 = [(window.innerWidth * 3) / 4, (window.innerHeight * 4) / 5];
+      let mid2 = [(window.innerWidth * 2) / 3, window.innerHeight / 5];
+      result.push({
+        startPoint: startPoint,
+        endPoint: mid1,
+        maxPoints: 20
+      });
+      result.push({
+        startPoint: mid1,
+        endPoint: mid2,
+        maxPoints: 20
+      });
+      result.push({
+        startPoint: mid2,
+        endPoint: endPoint,
+        maxPoints: 20
+      });
+      return result;
+    } catch (e) {
+      if (tries++ > 20) {
+        throw e;
+      }
+    }
+  }
+}
+
+function generatePath(
+  segments,
+  stepLength,
+  startHeading = getHeading(segments[0].startPoint, segments[0].endPoint)
+) {
+  let result = [];
+
+  let heading = startHeading;
+  for (let { startPoint, endPoint, maxPoints } of segments) {
+    let tries = 0,
+      resultSegment;
+    while (tries++ < 100) {
+      let attempt = tryGeneratePath(startPoint, endPoint, stepLength, heading);
+      if (attempt.length < maxPoints) {
+        resultSegment = attempt;
+        heading = getHeading(..._.takeRight(resultSegment, 2));
+      }
+    }
+    if (resultSegment) {
+      result = result.concat(resultSegment);
+    } else {
+      throw 'Could not find short enough path';
+    }
+  }
+  return result;
 }
 
 function tryGeneratePath(startPoint, endPoint, stepLength, startHeading) {
